@@ -22,8 +22,8 @@ DBInstance.prototype.select = function(select, from, callback) {
     });
 }
 
-DBInstance.prototype.selectWhere = function(select, from, where, callback) {
-    this.connection.query('SELECT ?? FROM ?? WHERE ?', [select, from, where], (error, response) => {
+DBInstance.prototype.selectWhere = function(select, from, where, equals, callback) {
+    this.connection.query('SELECT ?? FROM ?? WHERE ?? <= ?', [select, from, where, equals], (error, response) => {
         if (error) return callback(error, null);
         else return callback(null, response);
     });
