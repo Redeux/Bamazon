@@ -1,6 +1,8 @@
 "use strict";
 const DB = require("./DBInstance.js"),
-    promptly = require("promptly");
+    promptly = require("promptly"),
+    mysql = require("mysql"),
+    dbConfig = require("./db.json");
 
 queryAllProducts();
 
@@ -43,30 +45,34 @@ function promptUser() {
 
 function placeOrder(id, quantity) {
     console.log("\n");
-    let dbInstance = new DB();
-    dbInstance.connect();
+    let connection = mysql.createConnection(dbConfig);
+    connection.connect();
 
-    dbInstance.selectWhere(['price', 'stock_quantity'], 'products', { "id": id }, (error, response) => {
+    connection.query("SELECT price, stock_quantity FROM products WHERE ?", [{ "id": id }], (error, response) => {
         if (error) throw error;
 
         const stock_quantity = parseInt(response[0].stock_quantity),
             price = parseFloat(response[0].price);
 
-        if (stock_quantity < quantity) console.log('Insufficient quantity!');
+        if (stock_quantity < quantity) {
+            console.log('Insufficient quantity!');
+            connection.end();
+            return queryAllProducts();
+        } 
         else {
-            let dbInstance = new DB();
-            dbInstance.connect();
+            let connection = mysql.createConnection(dbConfig);
+            connection.connect();
 
             const newQuantity = stock_quantity - quantity;
-            dbInstance.updateWhere('products', { "stock_quantity": newQuantity }, { "id": id }, (error, response) => {
+            connection.query('UPDATE products SET ? WHERE ?', [{ "stock_quantity": newQuantity }, { "id": id }], (error, response) => {
                 if (error) throw error;
                 console.log('Order Sucessful!');
                 console.log('Your account will be billed $' + (price * quantity).toFixed(2));
+                connection.end();
+                return queryAllProducts();
             });
-
-            dbInstance.end();
         }
     });
 
-    dbInstance.end();
+
 }
